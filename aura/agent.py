@@ -6,6 +6,8 @@ import sys
 import webbrowser
 from urllib.parse import quote_plus, urlparse
 from .browser import browse
+from .providers import make_client, PROVIDERS
+from .settings import Settings
 
 from openai import OpenAI
 
@@ -43,13 +45,18 @@ def execute(name, args):
 
 class AuraAgent:
     def __init__(self):
-        key = os.getenv("XAI_API_KEY")
-        if not key:
-            raise RuntimeError("Set XAI_API_KEY in .env")
-        self.client = OpenAI(api_key=key, base_url="https://api.x.ai/v1")
-        self.model = os.getenv("XAI_MODEL", "grok-4-latest")
+        settings = Settings()
+        self.provider = settings.provider()
+        self.model = settings.model()
+        key = settings.api_key(self.provider)
+        if not key and self.provider != "Ollama (local)":
+            raise RuntimeError("Add your API key in Settings first")
+        self.client = make_client(self.provider, key)
 
     def run(self, command, progress=lambda message: None):
+        if self.provider == "Claude (Anthropic)":
+            from .claude import run_claude
+            return run_claude(self.client, self.model, command, progress)
         messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": command}]
         for _ in range(6):
             response = self.client.chat.completions.create(model=self.model, messages=messages, tools=TOOLS, tool_choice="auto")
