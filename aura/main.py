@@ -3,10 +3,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from PySide6.QtCore import QObject, QThread, Signal, Slot, Qt
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QFrame
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QFrame, QDialog, QComboBox, QDialogButtonBox, QFormLayout
 
 from .agent import AuraAgent
 from .voice import transcribe_once
+from .providers import PROVIDERS
+from .settings import Settings
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -36,6 +38,38 @@ class VoiceWorker(QObject):
             self.done.emit(transcribe_once())
         except Exception as exc:
             self.error.emit(str(exc))
+
+class SettingsDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("AURA · AI Provider Settings")
+        self.setMinimumWidth(470)
+        settings = Settings()
+        form = QFormLayout(self)
+        self.provider = QComboBox()
+        self.provider.addItems(PROVIDERS.keys())
+        self.provider.setCurrentText(settings.provider())
+        self.model = QLineEdit(settings.model())
+        self.key = QLineEdit()
+        self.key.setEchoMode(QLineEdit.Password)
+        self.key.setPlaceholderText("Paste API key (leave blank to keep saved key)")
+        self.provider.currentTextChanged.connect(lambda name: self.model.setText(PROVIDERS[name].default_model))
+        form.addRow("Provider", self.provider)
+        form.addRow("Model ID", self.model)
+        form.addRow("API key", self.key)
+        info = QLabel("Keys are stored in the OS credential vault, not in the repository.")
+        info.setWordWrap(True)
+        form.addRow(info)
+        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.save)
+        buttons.rejected.connect(self.reject)
+        form.addRow(buttons)
+
+    def save(self):
+        settings = Settings()
+        settings.save_key(self.provider.currentText(), self.key.text())
+        settings.set_provider(self.provider.currentText(), self.model.text())
+        self.accept()
 
 class Window(QMainWindow):
     def __init__(self):
@@ -75,6 +109,9 @@ class Window(QMainWindow):
             label = QLabel(item)
             label.setStyleSheet("color:#b5b9cb; padding:13px 7px;")
             side.addWidget(label)
+        self.settings_button = QPushButton("AI Provider / API Key")
+        self.settings_button.clicked.connect(self.configure)
+        side.addWidget(self.settings_button)
         side.addStretch()
         status = QLabel("●  READY FOR COMMANDS")
         status.setStyleSheet("color:#a98cff; font-size:11px; font-weight:700;")
@@ -117,6 +154,9 @@ class Window(QMainWindow):
         foot.setAlignment(Qt.AlignCenter)
         body.addWidget(foot)
         outer.addWidget(main, 1)
+
+    def configure(self):
+        SettingsDialog(self).exec()
 
     def listen(self):
         self.voice.setEnabled(False)
