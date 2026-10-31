@@ -23,3 +23,13 @@ Never commit `.env`, credentials, or tokens. The current agent exposes only thre
 - Expanded Windows UI Automation with permission prompts
 - Voice input/output and media controls
 - Tests, packaging, and security hardening
+
+## Voice and browser preview
+
+The **Speak** button records six seconds of audio and transcribes it locally with faster-whisper, then submits the recognized command to the same Grok agent. The first transcription may download a model. This is push-to-talk, not an always-on wake-word assistant.
+
+Install Chromium once with `python -m playwright install chromium`. The browser tool currently opens pages and Google searches; Apple Music playback, ChatGPT interaction, and arbitrary browser clicks are not yet implemented.
+
+The UI uses a dark PySide6 Widgets design; QML and more advanced styling remain on the roadmap. `scripts/build.ps1` is an experimental packaging script, not a verified release build.
+
+**Current limitations:** No cancellation during execution, no persisted conversation memory, no automated media playback, and no general-purpose desktop control. Review commands before execution. Never commit secrets.
