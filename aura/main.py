@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot, Qt
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QFrame
 
 from .agent import AuraAgent
+from .voice import transcribe_once
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
@@ -24,6 +25,17 @@ class Worker(QObject):
         except Exception as exc:
             result = f"Unable to complete: {exc}"
         self.done.emit(result)
+
+class VoiceWorker(QObject):
+    done = Signal(str)
+    error = Signal(str)
+
+    @Slot()
+    def run(self):
+        try:
+            self.done.emit(transcribe_once())
+        except Exception as exc:
+            self.error.emit(str(exc))
 
 class Window(QMainWindow):
     def __init__(self):
@@ -92,9 +104,12 @@ class Window(QMainWindow):
         self.prompt = QLineEdit()
         self.prompt.setPlaceholderText("Ask AURA to do something...")
         self.prompt.returnPressed.connect(self.submit)
+        self.voice = QPushButton("🎙 Speak")
+        self.voice.clicked.connect(self.listen)
         self.send = QPushButton("Execute  ↗")
         self.send.clicked.connect(self.submit)
         row.addWidget(self.prompt, 1)
+        row.addWidget(self.voice)
         row.addWidget(self.send)
         body.addLayout(row)
         foot = QLabel("AURA  /  GROK-POWERED  •  Actions are logged in this session")
@@ -102,6 +117,29 @@ class Window(QMainWindow):
         foot.setAlignment(Qt.AlignCenter)
         body.addWidget(foot)
         outer.addWidget(main, 1)
+
+    def listen(self):
+        self.voice.setEnabled(False)
+        self.log.append("\\nVOICE  ›  Listening for 6 seconds...")
+        self.voice_thread = QThread()
+        self.voice_worker = VoiceWorker()
+        self.voice_worker.moveToThread(self.voice_thread)
+        self.voice_thread.started.connect(self.voice_worker.run)
+        self.voice_worker.done.connect(self.heard)
+        self.voice_worker.error.connect(lambda error: self.log.append("VOICE ERROR  ›  " + error))
+        self.voice_worker.done.connect(self.voice_thread.quit)
+        self.voice_worker.error.connect(self.voice_thread.quit)
+        self.voice_thread.finished.connect(lambda: self.voice.setEnabled(True))
+        self.voice_thread.finished.connect(self.voice_worker.deleteLater)
+        self.voice_thread.finished.connect(self.voice_thread.deleteLater)
+        self.voice_thread.start()
+
+    def heard(self, text):
+        if text:
+            self.prompt.setText(text)
+            self.submit()
+        else:
+            self.log.append("VOICE  ›  No speech detected.")
 
     def submit(self):
         prompt = self.prompt.text().strip()
