@@ -14,7 +14,7 @@ AURA is an experimental Windows desktop assistant powered by Grok (xAI API). It 
 
 ## Safety
 
-Never commit `.env`, credentials, or tokens. The current agent exposes only three allowlisted actions and does not yet automate ChatGPT or Apple Music playback. Browser URLs and search pages are opened, not controlled with Playwright. The project is a starter, not a finished autonomous agent.
+Never commit `.env`, credentials, or tokens. The current agent exposes only three allowlisted actions and does not yet automate ChatGPT or Apple Music playback. Browser URLs and search pages are opened in the default browser; advanced page control is not implemented. The project is a starter, not a finished autonomous agent.
 
 ## Roadmap
 
@@ -41,3 +41,7 @@ Open **AI Provider / API Key** in the sidebar, select Grok, OpenAI, Claude, Deep
 ## Windows executable
 
 The GitHub Actions workflow `.github/workflows/windows-build.yml` builds an experimental Windows application and uploads `AURA-Windows.zip` to the workflow run's **Artifacts** section. Extract the ZIP and run `AURA.exe` inside its folder. The build is not code-signed. Browser binaries are not bundled; Playwright browser automation may require `python -m playwright install chromium` on the target machine. Voice recognition may download a Whisper model at first use. No Windows release has been verified yet.
+
+## Current build and browser behavior
+
+The Windows workflow now packages `aura/__main__.py` and checks for `dist/AURA/AURA.exe`. The packaged EXE is **not verified** until a GitHub Actions run completes successfully and its artifact is inspected. Browser commands use the default browser and retain normal sign-in sessions. Apple Music search opens search results, but playback selection is not automated. Voice input requires microphone permission; local Whisper model files may download on first use. Spoken responses are optional.
