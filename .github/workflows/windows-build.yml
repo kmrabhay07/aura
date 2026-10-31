@@ -19,7 +19,11 @@ jobs:
       - name: Tests
         run: python -m pytest -q
       - name: Build Windows app
-        run: python -m PyInstaller --noconfirm --clean --windowed --name AURA --collect-all PySide6 --collect-all faster_whisper --collect-all sounddevice --collect-all keyring --collect-all anthropic --collect-all playwright aura/main.py
+        run: python -m PyInstaller --noconfirm --clean --windowed --name AURA --collect-all PySide6 --collect-all faster_whisper --collect-all sounddevice --collect-all keyring --collect-all anthropic --collect-all playwright --paths . aura/__main__.py
+      - name: Verify executable exists
+        shell: pwsh
+        run: |
+          if (!(Test-Path "dist/AURA/AURA.exe")) { throw "AURA.exe missing" }
       - name: Archive
         shell: pwsh
         run: Compress-Archive -Path dist/AURA/* -DestinationPath AURA-Windows.zip
