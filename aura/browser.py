@@ -20,6 +20,12 @@ def browse(action, value=None):
                     return "Blocked: invalid web address"
                 page.goto(value, wait_until="domcontentloaded", timeout=30000)
                 return "Opened " + page.title()
+            if action == "chatgpt":
+                page.goto("https://chatgpt.com/", wait_until="domcontentloaded", timeout=30000)
+                return "Opened ChatGPT. Sign in if required."
+            if action == "music_search":
+                page.goto("https://music.apple.com/search?term=" + quote_plus(value or ""), wait_until="domcontentloaded", timeout=30000)
+                return "Opened Apple Music search. Select a result to play."
             if action == "music":
                 page.goto("https://music.apple.com/", wait_until="domcontentloaded", timeout=30000)
                 return "Opened Apple Music. Playback requires login and further site automation."
