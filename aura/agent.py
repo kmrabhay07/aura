@@ -5,6 +5,7 @@ import subprocess
 import sys
 import webbrowser
 from urllib.parse import quote_plus, urlparse
+from .browser import browse
 
 from openai import OpenAI
 
@@ -15,6 +16,7 @@ before any destructive, financial, or external communication action. Do not inve
 TOOLS = [
     {"type": "function", "function": {"name": "open_url", "description": "Open a web URL in the default browser", "parameters": {"type": "object", "properties": {"url": {"type": "string"}}, "required": ["url"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "web_search", "description": "Search using the default browser", "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"], "additionalProperties": False}}},
+    {"type": "function", "function": {"name": "browser", "description": "Open web pages, search Google, or open Apple Music in an automated Chromium session", "parameters": {"type": "object", "properties": {"action": {"type": "string", "enum": ["search", "navigate", "music"]}, "value": {"type": "string"}}, "required": ["action"], "additionalProperties": False}}},
     {"type": "function", "function": {"name": "open_app", "description": "Open an allowed Windows application", "parameters": {"type": "object", "properties": {"app": {"type": "string", "enum": ["notepad", "calculator", "explorer"]}}, "required": ["app"], "additionalProperties": False}}},
 ]
 
@@ -31,8 +33,12 @@ def execute(name, args):
         if sys.platform != "win32":
             return "Windows applications require Windows"
         apps = {"notepad": "notepad.exe", "calculator": "calc.exe", "explorer": "explorer.exe"}
+        if args["app"] not in apps:
+            return "Unsupported application"
         subprocess.Popen([apps[args["app"]]])
         return f"Launched {args['app']}"
+    if name == "browser":
+        return browse(args["action"], args.get("value"))
     return "Unsupported action"
 
 class AuraAgent:
