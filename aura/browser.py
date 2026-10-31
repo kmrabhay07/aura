@@ -28,26 +28,12 @@ def target_url(action, value=None):
     return None
 
 def browse(action, value=None):
+    """Open a validated target in the user's default browser.
+
+    This intentionally does not claim to automate playback or page clicks.
+    """
+    import webbrowser
     url = target_url(action, value)
     if not url:
         return "Blocked: invalid or missing browser target"
-    # Browser process is independent from the UI; cookies are kept in a dedicated profile.
-    import subprocess
-    import sys
-    if getattr(sys, "frozen", False):
-        # Frozen applications cannot assume a Python interpreter is installed.
-        from playwright.sync_api import sync_playwright
-        profile = Path(os.getenv("LOCALAPPDATA", str(Path.home()))) / "AURA" / "browser-profile"
-        profile.mkdir(parents=True, exist_ok=True)
-        with sync_playwright() as p:
-            context = p.chromium.launch_persistent_context(str(profile), headless=False)
-            try:
-                page = context.pages[0] if context.pages else context.new_page()
-                page.goto(url, wait_until="domcontentloaded", timeout=30000)
-                return "Opened " + url + " (automation window closes after navigation)"
-            finally:
-                context.close()
-    # For source development, open the requested site in the default browser,
-    # which persists beyond the command and supports normal sign-in.
-    import webbrowser
     return "Opened " + url if webbrowser.open(url) else "Browser could not be opened"
