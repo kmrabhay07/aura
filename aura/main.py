@@ -6,7 +6,7 @@ from PySide6.QtCore import QObject, QThread, Signal, Slot, Qt
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QLineEdit, QPushButton, QFrame, QDialog, QComboBox, QDialogButtonBox, QFormLayout
 
 from .agent import AuraAgent
-from .voice import transcribe_once
+from .voice import transcribe_once, speak
 from .providers import PROVIDERS
 from .settings import Settings
 
@@ -27,6 +27,21 @@ class Worker(QObject):
         except Exception as exc:
             result = f"Unable to complete: {exc}"
         self.done.emit(result)
+
+class SpeechWorker(QObject):
+    done = Signal()
+
+    def __init__(self, text):
+        super().__init__()
+        self.text = text
+
+    @Slot()
+    def run(self):
+        try:
+            speak(self.text)
+        except Exception:
+            pass
+        self.done.emit()
 
 class VoiceWorker(QObject):
     done = Signal(str)
@@ -141,11 +156,15 @@ class Window(QMainWindow):
         self.prompt = QLineEdit()
         self.prompt.setPlaceholderText("Ask AURA to do something...")
         self.prompt.returnPressed.connect(self.submit)
+        self.speech_toggle = QPushButton("Voice replies: OFF")
+        self.speech_toggle.setCheckable(True)
+        self.speech_toggle.toggled.connect(lambda enabled: self.speech_toggle.setText("Voice replies: ON" if enabled else "Voice replies: OFF"))
         self.voice = QPushButton("🎙 Speak")
         self.voice.clicked.connect(self.listen)
         self.send = QPushButton("Execute  ↗")
         self.send.clicked.connect(self.submit)
         row.addWidget(self.prompt, 1)
+        row.addWidget(self.speech_toggle)
         row.addWidget(self.voice)
         row.addWidget(self.send)
         body.addLayout(row)
@@ -202,6 +221,15 @@ class Window(QMainWindow):
     def finished(self, result):
         self.log.append("\nAURA  ›  " + result + "\n")
         self.send.setEnabled(True)
+        if self.speech_toggle.isChecked():
+            self.speech_thread = QThread()
+            self.speech_worker = SpeechWorker(result)
+            self.speech_worker.moveToThread(self.speech_thread)
+            self.speech_thread.started.connect(self.speech_worker.run)
+            self.speech_worker.done.connect(self.speech_thread.quit)
+            self.speech_thread.finished.connect(self.speech_worker.deleteLater)
+            self.speech_thread.finished.connect(self.speech_thread.deleteLater)
+            self.speech_thread.start()
 
 def main():
     app = QApplication(sys.argv)
