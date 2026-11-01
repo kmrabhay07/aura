@@ -8,3 +8,6 @@ sounddevice>=0.5,<1
 pyttsx3>=2.98,<3
 anthropic>=0.45,<1
 keyring>=25,<27
+
+# faster-whisper 1.2.1 passes metadata_errors removed in PyAV 19.
+av>=17,<19
