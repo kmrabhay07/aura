@@ -40,8 +40,22 @@ Open **AI Provider / API Key** in the sidebar, select Grok, OpenAI, Claude, Deep
 
 ## Windows executable
 
-The GitHub Actions workflow `.github/workflows/windows-build.yml` builds an experimental Windows application and uploads `AURA-Windows.zip` to the workflow run's **Artifacts** section. Extract the ZIP and run `AURA.exe` inside its folder. The build is not code-signed. Browser binaries are not bundled; Playwright browser automation may require `python -m playwright install chromium` on the target machine. Voice recognition may download a Whisper model at first use. No Windows release has been verified yet.
+The GitHub Actions workflow `.github/workflows/windows-build.yml` builds an experimental Windows application and uploads the application files as the `AURA-Windows` artifact to the workflow run's **Artifacts** section. Extract the ZIP and run `AURA.exe` inside its folder. The build is not code-signed. Browser binaries are not bundled; Playwright browser automation may require `python -m playwright install chromium` on the target machine. Voice recognition may download a Whisper model at first use. No Windows release has been verified yet.
 
 ## Current build and browser behavior
 
 The Windows workflow now packages `aura/__main__.py` and checks for `dist/AURA/AURA.exe`. The packaged EXE is **not verified** until a GitHub Actions run completes successfully and its artifact is inspected. Browser commands use the default browser and retain normal sign-in sessions. Apple Music search opens search results, but playback selection is not automated. Voice input requires microphone permission; local Whisper model files may download on first use. Spoken responses are optional.
+
+## Packaging verification
+
+Both Windows build paths collect faster-whisper data under
+`_internal/faster_whisper/assets`, including its Silero ONNX VAD model.
+`scripts/verify-package.ps1` runs the frozen EXE with
+`--verify-voice-assets <report.json>` and requires VAD to load and process
+one second of silence. This check needs no microphone or Whisper download.
+`python -m pytest -q tests/test_packaging.py` also tests the installed VAD
+and failure reporting. These checks do not replace testing a real microphone.
+
+Download **AURA-Windows** from a successful Windows EXE build's Artifacts section
+and extract it once. `AURA.exe` and `_internal` are at the extracted root;
+the workflow uploads files directly so GitHub's download ZIP contains no inner ZIP.

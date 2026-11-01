@@ -27,16 +27,13 @@ jobs:
       - name: Tests
         run: python -m pytest -q
       - name: Build Windows app
-        run: python -m PyInstaller --noconfirm --clean --windowed --name AURA --paths . --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.QtWebEngineWidgets --exclude-module PySide6.QtWebEngineQuick --exclude-module PySide6.Qt3DCore --exclude-module PySide6.QtCharts --exclude-module PySide6.QtDataVisualization --exclude-module PySide6.QtMultimedia --exclude-module PySide6.QtMultimediaWidgets --exclude-module PySide6.QtPdf --exclude-module PySide6.QtPdfWidgets --exclude-module PySide6.QtQuick --exclude-module PySide6.QtQml --exclude-module PySide6.QtDesigner --exclude-module PySide6.QtHelp --exclude-module PySide6.QtNetworkAuth --exclude-module PySide6.QtOpenGL --exclude-module PySide6.QtOpenGLWidgets --exclude-module PySide6.QtPositioning --exclude-module PySide6.QtSensors --exclude-module PySide6.QtSerialPort --exclude-module PySide6.QtSql --exclude-module PySide6.QtSvgWidgets --exclude-module PySide6.QtTest --exclude-module PySide6.QtTextToSpeech --exclude-module PySide6.QtWebSockets --exclude-module PySide6.QtXml --exclude-module playwright aura/__main__.py
-      - name: Verify executable exists
+        run: python -m PyInstaller --noconfirm --clean --windowed --name AURA --paths . --collect-data faster_whisper --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.QtWebEngineWidgets --exclude-module PySide6.QtWebEngineQuick --exclude-module PySide6.Qt3DCore --exclude-module PySide6.QtCharts --exclude-module PySide6.QtDataVisualization --exclude-module PySide6.QtMultimedia --exclude-module PySide6.QtMultimediaWidgets --exclude-module PySide6.QtPdf --exclude-module PySide6.QtPdfWidgets --exclude-module PySide6.QtQuick --exclude-module PySide6.QtQml --exclude-module PySide6.QtDesigner --exclude-module PySide6.QtHelp --exclude-module PySide6.QtNetworkAuth --exclude-module PySide6.QtOpenGL --exclude-module PySide6.QtOpenGLWidgets --exclude-module PySide6.QtPositioning --exclude-module PySide6.QtSensors --exclude-module PySide6.QtSerialPort --exclude-module PySide6.QtSql --exclude-module PySide6.QtSvgWidgets --exclude-module PySide6.QtTest --exclude-module PySide6.QtTextToSpeech --exclude-module PySide6.QtWebSockets --exclude-module PySide6.QtXml --exclude-module playwright aura/__main__.py
+      - name: Verify packaged voice assets
         shell: pwsh
-        run: |
-          if (!(Test-Path "dist/AURA/AURA.exe")) { throw "AURA.exe missing" }
-      - name: Archive
-        shell: pwsh
-        run: Compress-Archive -Path dist/AURA/* -DestinationPath AURA-Windows.zip
+        run: ./scripts/verify-package.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: AURA-Windows
-          path: AURA-Windows.zip
+          path: dist/AURA/*
+          if-no-files-found: error
           retention-days: 14
