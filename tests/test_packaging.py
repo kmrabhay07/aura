@@ -26,3 +26,12 @@ def test_failed_voice_check_writes_failure_report(tmp_path, monkeypatch):
     assert json.loads(report.read_text()) == {
         "ok": False, "error": "silero_vad_v6.onnx"
     }
+
+
+def test_packaging_checks_browser_driver_assets_without_launching_browser(tmp_path,monkeypatch):
+    import playwright
+    from aura.packaging_check import check_browser_runtime
+    assert check_browser_runtime()['cli'].endswith('cli.js')
+    monkeypatch.setattr(playwright,'__file__',str(tmp_path/'__init__.py'))
+    with __import__('pytest').raises(RuntimeError,match='driver assets'):
+        check_browser_runtime()
