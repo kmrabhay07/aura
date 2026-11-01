@@ -4,7 +4,8 @@ $exe = Join-Path $PackagePath "AURA.exe"
 if (!(Test-Path $exe)) { throw "AURA.exe missing" }
 $assets = Join-Path $PackagePath "_internal/faster_whisper/assets"
 if (!(Test-Path "$assets/silero*.onnx")) { throw "Packaged Silero VAD assets missing: $assets" }
-if (Get-ChildItem $PackagePath -Recurse -Filter *.zip) { throw "Nested ZIP found in application package" }
+# PyInstaller requires _internal/base_library.zip; only reject wrapper archives.
+if (Get-ChildItem $PackagePath -File -Filter *.zip) { throw "Wrapper ZIP found at application root" }
 $report = Join-Path ([IO.Path]::GetTempPath()) ("aura-voice-" + [guid]::NewGuid() + ".json")
 try {
     $process = Start-Process -FilePath (Resolve-Path $exe) -ArgumentList @("--verify-voice-assets", "`"$report`"") -WindowStyle Hidden -PassThru
