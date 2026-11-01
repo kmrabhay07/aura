@@ -1,1 +1,1 @@
-"""AURA desktop assistant."""
+"""Jarvis desktop assistant, maintained in the AURA project."""

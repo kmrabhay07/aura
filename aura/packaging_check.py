@@ -20,9 +20,21 @@ def check_voice_assets():
     return {"ok": True, "assets": [str(model) for model in models]}
 
 
+def check_browser_runtime():
+    import os
+    import playwright
+    driver = Path(playwright.__file__).resolve().parent / 'driver'
+    node = driver / ('node.exe' if os.name=='nt' else 'node')
+    cli = driver / 'package' / 'cli.js'
+    if not node.is_file() or not cli.is_file():
+        raise RuntimeError('Packaged browser driver assets are missing')
+    return {'node':str(node),'cli':str(cli)}
+
+
 def write_voice_check_report(destination):
     try:
         report = check_voice_assets()
+        report['browser_runtime'] = check_browser_runtime()
     except Exception as exc:
         Path(destination).write_text(json.dumps({"ok": False, "error": str(exc)}))
         return 1
