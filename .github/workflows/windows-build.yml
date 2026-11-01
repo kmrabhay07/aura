@@ -16,6 +16,15 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pyinstaller
           python -m playwright install chromium
+      - name: Verify speech dependency compatibility
+        shell: pwsh
+        run: |
+          @'
+          import av
+          from importlib.metadata import version
+          assert int(version("av").split(".")[0]) < 19, version("av")
+          print("PyAV compatible:", version("av"))
+          '@ | python -
       - name: Tests
         run: python -m pytest -q
       - name: Build Windows app
