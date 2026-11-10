@@ -10,7 +10,7 @@ class Settings:
         self.store = QSettings("AURA", "DesktopAgent")
 
     def provider(self):
-        value = self.store.value("provider", "Grok (xAI)")
+        value = self.store.value("provider", "OpenAI (GPT)")
         return value if value in PROVIDERS else "Grok (xAI)"
 
     def model(self):
@@ -29,10 +29,18 @@ class Settings:
 
     def api_key(self, provider):
         import keyring
+
         try:
-            return keyring.get_password(SERVICE, provider) or (os.getenv("XAI_API_KEY", "") if provider == "Grok (xAI)" else "")
+            saved = keyring.get_password(SERVICE, provider)
         except keyring.errors.KeyringError:
-            return os.getenv("XAI_API_KEY", "") if provider == "Grok (xAI)" else ""
+            saved = None
+        if saved:
+            return saved
+        if provider == "OpenAI (GPT)":
+            return os.getenv("OPENAI_API_KEY", "").strip() or os.getenv("OPEN_API_KEY", "").strip()
+        if provider == "Grok (xAI)":
+            return os.getenv("XAI_API_KEY", "")
+        return ""
 
     def hotkey(self):
         from .hotkey import DEFAULT_HOTKEY

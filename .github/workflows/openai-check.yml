@@ -1,0 +1,42 @@
+name: Check OpenAI credential
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check OpenAI access
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPEN_API_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import urllib.error
+          import urllib.request
+
+          key = os.environ.get("OPENAI_API_KEY", "").strip()
+          if not key:
+              raise SystemExit("Repository secret OPEN_API_KEY is missing.")
+
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args, **kwargs):
+                  return None
+
+          request = urllib.request.Request(
+              "https://api.openai.com/v1/models/gpt-4.1-mini",
+              headers={"Authorization": "Bearer " + key},
+          )
+          try:
+              with urllib.request.build_opener(NoRedirect()).open(request, timeout=20):
+                  print("OpenAI model access verified.")
+          except urllib.error.HTTPError as error:
+              raise SystemExit(f"OpenAI model access check returned HTTP {error.code}.") from None
+          except Exception:
+              raise SystemExit("Could not reach the OpenAI model endpoint.") from None
+          PY

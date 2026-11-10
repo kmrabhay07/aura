@@ -182,3 +182,16 @@ routing, concurrent/scheduled agents, personal-browser extension bridging,
 third-party account integrations and rich 3D drawing are not implemented here.
 Any new paid speech service/account connection requires a separate explicit choice.
 Wake-word activation remains a separate, explicitly opt-in proposal.
+
+## OpenAI setup
+
+OpenAI (GPT) is the default for new setups. Existing provider selections are
+preserved. Select OpenAI (GPT) in Jarvis Settings to use one credential for
+chat, screen-aware requests, conversation context and tool decisions. Enter
+the key in Settings to store it in Windows Credential Manager, or provide
+OPENAI_API_KEY at runtime. OPEN_API_KEY also works as a fallback.
+Microphone transcription and spoken replies use the existing local engines.
+
+The manual **Check OpenAI credential** workflow on main maps the repository
+secret OPEN_API_KEY to OPENAI_API_KEY for one model-access check. The Windows
+build and downloadable EXE do not receive the secret.
