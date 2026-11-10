@@ -217,3 +217,15 @@ def test_opt_in_history_saves_text_only_and_new_session_has_a_new_id(tmp_path):
         assert pipe.session_id!=key and pipe.conversation.history()==[]
     finally:
         pipe.close()
+
+def test_provider_bad_request_hints_keep_payload_private():
+    from types import SimpleNamespace
+    from aura.pipeline import provider_error_hint
+
+    error = SimpleNamespace(status_code=400, param="tools[0]", message="private payload")
+    assert "function calling" in provider_error_hint(error)
+    assert "private payload" not in provider_error_hint(error)
+    error.param = "model"
+    assert "Model ID" in provider_error_hint(error)
+    error.param = None
+    assert "gpt-4.1-mini" in provider_error_hint(error)

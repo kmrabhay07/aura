@@ -9,6 +9,26 @@ from .history import HistoryStore
 from .browser_agent import BrowserAgent
 
 
+def provider_error_hint(error):
+    # Display only fixed messages. Provider payloads can contain private inputs.
+    status = getattr(error, "status_code", None)
+    code = getattr(error, "code", None)
+    if status in (401, 403):
+        return "AI access was denied. Check the selected provider, API key and project permissions in Settings."
+    if status == 429:
+        return "The AI provider reported a rate or quota limit. Check project usage and billing, then retry."
+    if status == 404 or code == "model_not_found":
+        return "The AI model is unavailable to this key. Check Provider and Model ID in Settings."
+    if status in (400, 422):
+        param = getattr(error, "param", None)
+        if isinstance(param, str) and param.startswith(("tools", "tool_choice")):
+            return "The AI provider rejected the action tools. Check that the selected model supports function calling."
+        if param == "model":
+            return "The AI provider rejected the model selection. Check Provider and Model ID in Settings."
+        return "The AI provider rejected this request. Check that the selected model supports chat and function calling. For OpenAI (GPT), try gpt-4.1-mini."
+    return None
+
+
 class Pipeline:
     def __init__(self, notify, agent_factory=AuraAgent, recorder=None,
                  transcriber=None, speaker=None):
@@ -165,6 +185,8 @@ class Pipeline:
                     "Microphone overflow or device error; try again"}:
                 detail = str(exc)
             else:
-                detail = f"{type(exc).__name__}: request failed. Check microphone, model availability, provider settings or connection."
+                detail = provider_error_hint(exc) or (
+                    f"{type(exc).__name__}: request failed. Check microphone, model availability, provider settings or connection."
+                )
             self.emit(turn, "error", detail)
             turn.cancel.set()
