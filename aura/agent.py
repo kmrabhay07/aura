@@ -72,13 +72,28 @@ class AuraAgent:
                     {"role": "user", "content": screen.content(command) if screen else command}]
         tools=tools_for(TOOLS,screen,browser)
         answer = []
-        for _ in range(6):
+        for round_index in range(6):
             turn.check()
             calls = {}
             text = []
-            stream = self.client.chat.completions.create(
-                model=self.model, messages=messages, tools=tools,
-                tool_choice="auto", stream=True)
+            chat = self.client.chat.completions
+            actions_available = True
+            try:
+                stream = chat.create(model=self.model, messages=messages, tools=tools, stream=True)
+            except Exception as error:
+                # Retry only before any output or actions. Keep explicit browser
+                # tasks intact so they cannot silently turn into plain chat.
+                if (round_index != 0 or browser is not None
+                        or getattr(error, "status_code", None) not in (400, 422)
+                        or getattr(error, "param", None) == "model"):
+                    raise
+                turn.check()
+                messages[0]["content"] += (
+                    "\nAction and annotation tools are unavailable for this reply. "
+                    "Answer conversationally and do not claim to perform actions."
+                )
+                stream = chat.create(model=self.model, messages=messages, stream=True)
+                actions_available = False
             try:
                 for chunk in stream:
                     turn.check()
@@ -89,7 +104,7 @@ class AuraAgent:
                         text.append(delta.content)
                         answer.append(delta.content)
                         on_text(delta.content)
-                    for item in delta.tool_calls or []:
+                    for item in (delta.tool_calls or []) if actions_available else ():
                         call = calls.setdefault(item.index, {"id": "", "type": "function",
                             "function": {"name": "", "arguments": ""}})
                         if item.id:
@@ -100,6 +115,8 @@ class AuraAgent:
             finally:
                 stream.close()
             turn.check()
+            if not actions_available:
+                progress("The provider accepted chat without action tools. No action was performed.")
             if not calls:
                 if not answer:
                     on_text("Completed.")

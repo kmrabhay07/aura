@@ -110,3 +110,24 @@ def test_screen_images_are_added_only_to_this_turn_and_guidance_is_routed(monkey
     assert annotations==[values['shapes']]
     assert requests[0]['messages'][-1]['content'][1]['type']=='image_url'
     assert any(t['function']['name']=='annotate_screen' for t in requests[0]['tools'])
+
+
+def test_rejected_tool_request_retries_as_chat_only(monkeypatch):
+    agent, _ = agent_with_streams([])
+    requests = []
+
+    class Rejected(Exception):
+        status_code = 400
+
+    def create(**kwargs):
+        requests.append(kwargs)
+        if len(requests) == 1:
+            raise Rejected()
+        return Stream([chunk("Hello.")])
+
+    agent.client.chat.completions.create = create
+    receipts = []
+    assert agent.run("hi", progress=receipts.append) == "Hello."
+    assert "tools" in requests[0]
+    assert "tools" not in requests[1] and "tool_choice" not in requests[1]
+    assert "No action was performed" in receipts[0]
