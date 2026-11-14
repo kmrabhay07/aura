@@ -1,6 +1,7 @@
 name: Windows EXE build
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches: [main]
 jobs:
@@ -27,13 +28,13 @@ jobs:
       - name: Tests
         run: python -m pytest -q
       - name: Build Windows app
-        run: python -m PyInstaller --noconfirm --clean --windowed --name AURA --paths . --collect-data faster_whisper --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.QtWebEngineWidgets --exclude-module PySide6.QtWebEngineQuick --exclude-module PySide6.Qt3DCore --exclude-module PySide6.QtCharts --exclude-module PySide6.QtDataVisualization --exclude-module PySide6.QtMultimedia --exclude-module PySide6.QtMultimediaWidgets --exclude-module PySide6.QtPdf --exclude-module PySide6.QtPdfWidgets --exclude-module PySide6.QtQuick --exclude-module PySide6.QtQml --exclude-module PySide6.QtDesigner --exclude-module PySide6.QtHelp --exclude-module PySide6.QtNetworkAuth --exclude-module PySide6.QtOpenGL --exclude-module PySide6.QtOpenGLWidgets --exclude-module PySide6.QtPositioning --exclude-module PySide6.QtSensors --exclude-module PySide6.QtSerialPort --exclude-module PySide6.QtSql --exclude-module PySide6.QtSvgWidgets --exclude-module PySide6.QtTest --exclude-module PySide6.QtTextToSpeech --exclude-module PySide6.QtWebSockets --exclude-module PySide6.QtXml --exclude-module playwright aura/__main__.py
+        run: python -m PyInstaller --noconfirm --clean --windowed --onefile --name Jarvis --paths . --collect-data faster_whisper --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.QtWebEngineWidgets --exclude-module PySide6.QtWebEngineQuick --exclude-module PySide6.Qt3DCore --exclude-module PySide6.QtCharts --exclude-module PySide6.QtDataVisualization --exclude-module PySide6.QtMultimedia --exclude-module PySide6.QtMultimediaWidgets --exclude-module PySide6.QtPdf --exclude-module PySide6.QtPdfWidgets --exclude-module PySide6.QtQuick --exclude-module PySide6.QtQml --exclude-module PySide6.QtDesigner --exclude-module PySide6.QtHelp --exclude-module PySide6.QtNetworkAuth --exclude-module PySide6.QtOpenGL --exclude-module PySide6.QtOpenGLWidgets --exclude-module PySide6.QtPositioning --exclude-module PySide6.QtSensors --exclude-module PySide6.QtSerialPort --exclude-module PySide6.QtSql --exclude-module PySide6.QtSvgWidgets --exclude-module PySide6.QtTest --exclude-module PySide6.QtTextToSpeech --exclude-module PySide6.QtWebSockets --exclude-module PySide6.QtXml --collect-data playwright aura/__main__.py
       - name: Verify packaged voice assets
         shell: pwsh
-        run: ./scripts/verify-package.ps1
+        run: ./scripts/verify-package.ps1 -Executable dist/Jarvis.exe
       - uses: actions/upload-artifact@v4
         with:
-          name: AURA-Windows
-          path: dist/AURA/*
+          name: Jarvis-Windows
+          path: dist/Jarvis.exe
           if-no-files-found: error
           retention-days: 14
